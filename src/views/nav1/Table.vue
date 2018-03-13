@@ -3,14 +3,57 @@
 		<!--工具条-->
 		<el-col :span="24" class="toolbar" style="padding-bottom: 0px;">
 			<el-form :inline="true" :model="filters">
-				<el-form-item>
-					<el-input v-model="filters.name" placeholder="姓名"></el-input>
+				<el-form-item label="手机号">
+					<!-- <el-input v-model="filters.name" placeholder="姓名"></el-input> -->
+					<el-input v-model="filters.mobile" placeholder="手机号"></el-input>
+				</el-form-item>
+				<el-form-item label="时间区间">
+					<el-date-picker v-model="filters.time" type="datetimerange" :picker-options="pickerOptions2" range-separator="至"
+						start-placeholder="开始日期" end-placeholder="结束日期" align="right">
+    				</el-date-picker>
+				</el-form-item>
+				<el-form-item label="年龄开始">
+					<el-input v-model="filters.ageStart" placeholder="年龄开始"></el-input>
+				</el-form-item>
+				<el-form-item label="年龄结束">
+					<el-input v-model="filters.ageEnd" placeholder="年龄结束"></el-input>
+				</el-form-item>
+				<el-form-item label="是否下载">
+					<el-select v-model="filters.isDownload">
+						<el-option label="全部" value="0"></el-option>
+						<el-option label="是" value="1"></el-option>
+						<el-option label="否" value="2"></el-option>
+					</el-select>
+				</el-form-item>
+				<el-form-item label="是否联系">
+					<el-select v-model="filters.isConnected">
+						<el-option label="全部" value="0"></el-option>
+						<el-option label="是" value="1"></el-option>
+						<el-option label="否" value="2"></el-option>
+					</el-select>
+				</el-form-item>
+				<el-form-item label="入网时间">
+					<el-select v-model="filters.internetTime">
+						<el-option label="全部" value="0"></el-option>
+						<el-option label="是" value="1"></el-option>
+						<el-option label="否" value="2"></el-option>
+					</el-select>
+				</el-form-item>
+				<el-form-item label="渠道">
+					<el-select v-model="filters.source">
+						<el-option label="全部" value="0"></el-option>
+						<el-option label="是" value="1"></el-option>
+						<el-option label="否" value="2"></el-option>
+					</el-select>
 				</el-form-item>
 				<el-form-item>
 					<el-button type="primary" v-on:click="getUsers">查询</el-button>
 				</el-form-item>
 				<el-form-item>
-					<el-button type="primary" @click="handleAdd">新增</el-button>
+					<el-button type="primary" @click="handleAdd">导出</el-button>
+				</el-form-item>
+				<el-form-item>
+					<el-button type="primary" @click="handleAdd">导出运营商数据</el-button>
 				</el-form-item>
 			</el-form>
 		</el-col>
@@ -43,13 +86,13 @@
 			</el-table-column>
 			<el-table-column prop="mobile" label="手机" width="120">
 			</el-table-column>
-			<el-table-column prop="name" label="姓名" width="60" sortable>
+			<el-table-column prop="name" label="姓名" width="90" sortable>
 			</el-table-column>
-			<el-table-column prop="creditScore" label="芝麻分" width="60" sortable>
+			<el-table-column prop="creditScore" label="芝麻分" width="90" sortable>
 			</el-table-column>
 			<el-table-column prop="idCard" label="身份证" width="120">
 			</el-table-column>
-			<el-table-column prop="age" label="年龄" width="30" sortable>
+			<el-table-column prop="age" label="年龄" width="90" sortable>
 			</el-table-column>
 			<el-table-column prop="operatorData" label="运营商数据" min-width="180">
 			</el-table-column>
@@ -57,7 +100,7 @@
 			</el-table-column>
 			<el-table-column prop="operatorAuth" label="运营商认证" min-width="100">
 			</el-table-column>
-			<el-table-column prop="isDownload" label="下载" min-width="20">
+			<el-table-column prop="isDownload" label="下载" :formatter="formatDownload" min-width="90">
 			</el-table-column>
 			<el-table-column prop="connection" label="联系" min-width="100">
 			</el-table-column>
@@ -145,7 +188,14 @@
 		data() {
 			return {
 				filters: {
-					name: ''
+					mobile: '',
+					time: '',
+					ageStart: '',
+					ageEnd: '',
+					isDownload: '0',
+					isConnected: '0',
+					internetTime: '0',
+					source: '0'
 				},
 				users: [],
 				total: 0,
@@ -184,7 +234,35 @@
 					age: 0,
 					birth: '',
 					addr: ''
-				}
+				},
+				pickerOptions2: {
+					shortcuts: [{
+						text: '最近一周',
+						onClick(picker) {
+						const end = new Date();
+						const start = new Date();
+						start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+						picker.$emit('pick', [start, end]);
+						}
+					}, {
+						text: '最近一个月',
+						onClick(picker) {
+						const end = new Date();
+						const start = new Date();
+						start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+						picker.$emit('pick', [start, end]);
+						}
+					}, {
+						text: '最近三个月',
+						onClick(picker) {
+						const end = new Date();
+						const start = new Date();
+						start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+						picker.$emit('pick', [start, end]);
+						}
+					}]
+				},
+				value4: ''
 
 			}
 		},
@@ -192,6 +270,9 @@
 			//性别显示转换
 			formatSex: function (row, column) {
 				return row.sex == 1 ? '男' : row.sex == 0 ? '女' : '未知';
+			},
+			formatDownload: function (row, column) {
+				return row.isDownload ? '是' : '否'
 			},
 			handleCurrentChange(val) {
 				this.page = val;

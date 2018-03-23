@@ -7,6 +7,14 @@
     <el-form-item prop="checkPass">
       <el-input type="password" v-model="ruleForm2.checkPass" auto-complete="off" placeholder="密码"></el-input>
     </el-form-item>
+    <el-form-item>
+        <el-input name="validateCode" v-model="validateCode"
+          placeholder="验证码"></el-input>
+        <el-button @click="sendMessage">
+          <span v-if="sendMsgDisabled">{{time + '秒后获取'}}</span>
+          <span v-if="!sendMsgDisabled">发送验证码</span>
+        </el-button>
+    </el-form-item>
     <el-checkbox v-model="checked" checked class="remember">记住密码</el-checkbox>
     <el-form-item style="width:100%;">
       <el-button type="primary" style="width:100%;" @click.native.prevent="handleSubmit2" :loading="logining">登录</el-button>
@@ -36,13 +44,29 @@
             //{ validator: validaePass2 }
           ]
         },
-        checked: true
+        checked: true,
+        validateCode: '',
+        time: 60,
+        sendMsgDisabled: false
       };
     },
     methods: {
       handleReset2() {
         this.$refs.ruleForm2.resetFields();
       },
+      sendMessage(){
+      let me = this
+      if(!me.sendMsgDisabled){
+        me.sendMsgDisabled = true
+        let interval = window.setInterval(function(){
+          if ((me.time--) <= 0) {
+            me.time = 60
+            me.sendMsgDisabled = false
+            window.clearInterval(interval)
+          }
+        }, 1000)
+      }
+    },
       handleSubmit2(ev) {
         var _this = this;
         this.$refs.ruleForm2.validate((valid) => {
@@ -51,6 +75,10 @@
             this.logining = true;
             //NProgress.start();
             var loginParams = { username: this.ruleForm2.account, password: this.ruleForm2.checkPass };
+            // let params = new URLSearchParams()
+            // for (var key in loginParams) {
+            //     params.append(key, loginParams[key])
+            // }
             requestLogin(loginParams).then(data => {
               this.logining = false;
               //NProgress.done();

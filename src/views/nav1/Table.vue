@@ -18,7 +18,7 @@
 				<el-form-item label="年龄结束">
 					<el-input v-model="filters.ageEnd" placeholder="年龄结束"></el-input>
 				</el-form-item>
-				<el-form-item label="是否下载">
+				<!-- <el-form-item label="是否下载">
 					<el-select v-model="filters.isDownload">
 						<el-option label="全部" value="0"></el-option>
 						<el-option label="是" value="1"></el-option>
@@ -31,7 +31,7 @@
 						<el-option label="是" value="1"></el-option>
 						<el-option label="否" value="2"></el-option>
 					</el-select>
-				</el-form-item>
+				</el-form-item> -->
 				<el-form-item label="入网时间">
 					<el-select v-model="filters.internetTime">
 						<el-option label="全部" value="0"></el-option>
@@ -82,29 +82,32 @@
 			</el-table-column>
 		</el-table> -->
 		<el-table :data="users" highlight-current-row v-loading="listLoading" @selection-change="selsChange" style="width: 100%;">
-			<el-table-column prop="time" label= "时间" width="120" sortable>
+			<el-table-column prop="time" label= "时间" width="250" sortable>
 			</el-table-column>
-			<el-table-column prop="mobile" label="手机" width="120">
+			<el-table-column prop="mobile" label="手机" width="250">
 			</el-table-column>
-			<el-table-column prop="name" label="姓名" width="90" sortable>
+			<el-table-column prop="name" label="姓名" width="250" sortable>
+				<template scope="scope">
+					<a href="javascript:void(0)" @click="openDialog">{{ scope.row.name }}</a>
+				</template>
 			</el-table-column>
-			<el-table-column prop="creditScore" label="芝麻分" width="90" sortable>
+			<el-table-column prop="creditScore" label="芝麻分" width="250" sortable>
 			</el-table-column>
-			<el-table-column prop="idCard" label="身份证" width="120">
+			<el-table-column prop="idCard" label="身份证" width="250">
 			</el-table-column>
-			<el-table-column prop="age" label="年龄" width="90" sortable>
+			<el-table-column prop="age" label="年龄" width="250" sortable>
 			</el-table-column>
-			<el-table-column prop="operatorData" label="运营商数据" min-width="180">
+			<!-- <el-table-column prop="operatorData" label="运营商数据" min-width="180">
 			</el-table-column>
 			<el-table-column prop="contacts" label="联系人" min-width="180">
 			</el-table-column>
 			<el-table-column prop="operatorAuth" label="运营商认证" min-width="100">
-			</el-table-column>
-			<el-table-column prop="isDownload" label="下载" :formatter="formatDownload" min-width="90">
+			</el-table-column> -->
+			<!-- <el-table-column prop="isDownload" label="下载" :formatter="formatDownload" min-width="90">
 			</el-table-column>
 			<el-table-column prop="connection" label="联系" min-width="100">
-			</el-table-column>
-			<el-table-column prop="source" label="渠道" min-width="100">
+			</el-table-column> -->
+			<el-table-column prop="source" label="渠道" min-width="250">
 			</el-table-column>
 			<!-- <el-table-column label="操作" width="150">
 				<template scope="scope">
@@ -277,6 +280,9 @@
 			handleCurrentChange(val) {
 				this.page = val;
 				this.getUsers();
+			},
+			openDialog: function(row, column) {
+				console.log("test openDialog")
 			},
 			//获取用户列表
 			getUsers() {

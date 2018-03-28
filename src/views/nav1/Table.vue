@@ -116,13 +116,23 @@
 				</template>
 			</el-table-column> -->
 		</el-table>
-
+		<table-pagination v-if="pagishow">
+			<el-pagination
+			@size-change="handleSizeChange"
+			@current-change="handleCurrentChange"
+			:current-page="currentPage"
+			:page-sizes="[10, 50, 100, 200]"
+			:page-size="10"
+			layout="total, sizes, prev, pager, next, jumper"
+			:total="400">
+			</el-pagination>
+		</table-pagination>
 		<!--工具条-->
-		<el-col :span="24" class="toolbar">
+		<!-- <el-col :span="24" class="toolbar">
 			<el-button type="danger" @click="batchRemove" :disabled="this.sels.length===0">批量删除</el-button>
 			<el-pagination layout="prev, pager, next" @current-change="handleCurrentChange" :page-size="20" :total="total" style="float:right;">
 			</el-pagination>
-		</el-col>
+		</el-col> -->
 
 		<!--编辑界面-->
 		<el-dialog title="编辑" v-model="editFormVisible" :close-on-click-modal="false">
@@ -265,11 +275,19 @@
 						}
 					}]
 				},
-				value4: ''
+				value4: '',
+				pagishow: true,
+				currentPage: 1
 
 			}
 		},
 		methods: {
+			handleSizeChange(val) {
+				console.log(`每页 ${val} 条`);
+			},
+			handleCurrentChange(val) {
+				console.log(`当前页: ${val}`);
+			},
 			//性别显示转换
 			formatSex: function (row, column) {
 				return row.sex == 1 ? '男' : row.sex == 0 ? '女' : '未知';

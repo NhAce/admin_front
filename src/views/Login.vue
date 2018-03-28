@@ -1,14 +1,14 @@
 <template>
   <el-form :model="ruleForm2" :rules="rules2" ref="ruleForm2" label-position="left" label-width="0px" class="demo-ruleForm login-container">
-    <h3 class="title">系统登录</h3>
+    <h3 class="title">智能管理后台</h3>
     <el-form-item prop="account">
       <el-input type="text" v-model="ruleForm2.account" auto-complete="off" placeholder="账号"></el-input>
     </el-form-item>
     <el-form-item prop="checkPass">
       <el-input type="password" v-model="ruleForm2.checkPass" auto-complete="off" placeholder="密码"></el-input>
     </el-form-item>
-    <el-form-item>
-        <el-input name="validateCode" v-model="validateCode"
+    <el-form-item prop="validateCode">
+        <el-input name="validateCode" v-model="ruleForm2.validateCode"
           placeholder="验证码"></el-input>
         <el-button @click="sendMessage">
           <span v-if="sendMsgDisabled">{{time + '秒后获取'}}</span>
@@ -24,48 +24,128 @@
 </template>
 
 <script>
-  import { requestLogin } from '../api/api';
+  import { requestLogin, msgSend } from '../api/api';
   //import NProgress from 'nprogress'
   export default {
     data() {
+      const reg = /^1[3|4|5|7|8][0-9]\d{8}$/
+      var validPhone = (rule, value, callback)=>{
+        if(!value){
+          callback(new Error('请输入手机号'))
+        }else if(!reg.test(value)){
+          callback(new Error('请输入正确的11位手机号码'))
+        }else {
+          callback()
+        }
+      };
+      var validCode = (rule, value, callback)=>{
+        if(!value){
+          callback(new Error('请输入验证码'))
+        }else if(this.vcode !== value){
+          callback(new Error('请输入正确的验证码'))
+        }else{
+          callback()
+        }
+      };
       return {
         logining: false,
         ruleForm2: {
-          account: 'admin',
-          checkPass: '123456'
+          account: '',
+          checkPass: '',
+          validateCode: '',
         },
         rules2: {
           account: [
             { required: true, message: '请输入账号', trigger: 'blur' },
-            //{ validator: validaePass }
+            { validator: validPhone }
           ],
           checkPass: [
             { required: true, message: '请输入密码', trigger: 'blur' },
             //{ validator: validaePass2 }
+          ],
+          validateCode: [
+            { required: true, message: '请输入验证码', trigger: 'blur'},
+            {validator: validCode}
           ]
         },
         checked: true,
-        validateCode: '',
         time: 60,
-        sendMsgDisabled: false
+        sendMsgDisabled: false,
+        vcode: '',
+        validCodeTime: 5
       };
+    },
+    //页面加载时获取cookie值
+    mounted(){
+      this.getCookie()
     },
     methods: {
       handleReset2() {
         this.$refs.ruleForm2.resetFields();
       },
-      sendMessage(){
-      let me = this
-      if(!me.sendMsgDisabled){
-        me.sendMsgDisabled = true
-        let interval = window.setInterval(function(){
-          if ((me.time--) <= 0) {
-            me.time = 60
-            me.sendMsgDisabled = false
-            window.clearInterval(interval)
+      setCookie(c_name, c_pwd, exdays){
+        let exdate = new Date()//当前时间
+        exdate.setTime(exdate.getTime() + 24*60*60*1000*exdays)//保存的天数
+        //字符串拼接 cookie
+        window.document.cookie="userName" + "=" + c_name + ";path=/;expires=" + exdate.toGMTString();
+        window.document.cookie="userPwd" + "=" + c_pwd + ";path=/;expires=" + exdate.toGMTString();
+      },
+      getCookie(){
+        if(document.cookie.length > 0){
+          var arr = document.cookie.split('; ')
+          for(var i = 0; i < arr.length; i++){
+            var arr2 = arr[i].split('=')
+            if(arr2[0] == 'userName'){
+              this.ruleForm2.account = arr2[1]
+            }else if(arr2[0] == 'userPwd'){
+              this.ruleForm2.checkPass = arr2[1]
+            }
           }
-        }, 1000)
-      }
+        }
+      },
+      //清空cookie
+      clearCookie: function() {
+        this.setCookie("", "", -1); //修改2值都为空，天数为负1天就好了
+      },
+      sendMessage(){
+        let me = this
+        if(!me.sendMsgDisabled){
+          const reg1 = /^1[3|4|5|7|8][0-9]\d{8}$/
+          if (reg1.test(me.ruleForm2.account)){
+            let param = new URLSearchParams()
+            param.append('mobile', me.ruleForm2.account)
+            msgSend(param).then(data => {
+              let {msg, code, vcode} = data
+              if(code !== 200){
+                this.$message({
+                    message: msg,
+                    type: 'error'
+                  });
+              }else{
+                me.vcode = vcode
+                me.sendMsgDisabled = true
+                //发送短信按钮倒计时60s
+                let interval = window.setInterval(function(){
+                  if ((me.time--) <= 0) {
+                    me.time = 60
+                    me.sendMsgDisabled = false
+                    window.clearInterval(interval)
+                  }
+                }, 1000)
+                //短信验证码保留5分钟
+                let validInterval = window.setInterval(function(){
+                  if((me.validCodeTime--) <= 0){
+                    me.validCodeTime = 5
+                    me.vcode = ''
+                    window.clearInterval(validInterval)
+                  }
+                }, 60000)
+              }
+            })
+          }else{
+            alert("请先输入正确的手机号")
+          }
+        }
     },
       handleSubmit2(ev) {
         var _this = this;
@@ -74,12 +154,12 @@
             //_this.$router.replace('/table');
             this.logining = true;
             //NProgress.start();
-            var loginParams = { username: this.ruleForm2.account, password: this.ruleForm2.checkPass };
-            // let params = new URLSearchParams()
-            // for (var key in loginParams) {
-            //     params.append(key, loginParams[key])
-            // }
-            requestLogin(loginParams).then(data => {
+            var loginParams = { mobile: this.ruleForm2.account, password: this.ruleForm2.checkPass};
+            let params = new URLSearchParams()
+            for (var key in loginParams) {
+                params.append(key, loginParams[key])
+            }
+            requestLogin(params).then(data => {
               this.logining = false;
               //NProgress.done();
               let { msg, code, user } = data;
@@ -89,6 +169,13 @@
                   type: 'error'
                 });
               } else {
+                if(this.checked){
+                  //记住用户名密码
+                  this.setCookie(user.mobile, user.password, 7)
+                }else{
+                  //清楚用户名密码
+                  this.clearCookie()
+                }
                 sessionStorage.setItem('user', JSON.stringify(user));
                 this.$router.push({ path: '/table' });
               }

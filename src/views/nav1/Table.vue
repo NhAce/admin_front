@@ -81,8 +81,8 @@
 				</template>
 			</el-table-column>
 		</el-table> -->
-		<el-table :data="users" highlight-current-row v-loading="listLoading" @selection-change="selsChange" style="width: 100%;">
-			<el-table-column prop="time" label= "时间" width="250" sortable>
+		<el-table :data="mainData" highlight-current-row v-loading="listLoading" @selection-change="selsChange" style="width: 100%;">
+			<el-table-column prop="time" label= "时间" width="250" :formatter="formatTime" sortable>
 			</el-table-column>
 			<el-table-column prop="mobile" label="手机" width="250">
 			</el-table-column>
@@ -91,7 +91,7 @@
 					<a href="javascript:void(0)" @click="openDialog">{{ scope.row.name }}</a>
 				</template>
 			</el-table-column>
-			<el-table-column prop="creditScore" label="芝麻分" width="250" sortable>
+			<el-table-column prop="zhimaScore" label="芝麻分" width="250" sortable>
 			</el-table-column>
 			<el-table-column prop="idCard" label="身份证" width="250">
 			</el-table-column>
@@ -107,8 +107,9 @@
 			</el-table-column>
 			<el-table-column prop="connection" label="联系" min-width="100">
 			</el-table-column> -->
-			<el-table-column prop="source" label="渠道" min-width="250">
+			<el-table-column prop="realName" label="渠道" :formatter="formatSource" min-width="250">
 			</el-table-column>
+			
 			<!-- <el-table-column label="操作" width="150">
 				<template scope="scope">
 					<el-button size="small" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
@@ -122,9 +123,9 @@
 			@current-change="handleCurrentChange"
 			:current-page="currentPage"
 			:page-sizes="[10, 50, 100, 200]"
-			:page-size="10"
+			:page-size="pageSize"
 			layout="total, sizes, prev, pager, next, jumper"
-			:total="400">
+			:total="total">
 			</el-pagination>
 		</table-pagination>
 		<!--工具条-->
@@ -195,7 +196,7 @@
 <script>
 	import util from '../../common/js/util'
 	//import NProgress from 'nprogress'
-	import { getUserListPage, removeUser, batchRemoveUser, editUser, addUser } from '../../api/api';
+	import { getMainDataPage } from '../../api/api';
 
 	export default {
 		data() {
@@ -210,7 +211,7 @@
 					internetTime: '0',
 					source: '0'
 				},
-				users: [],
+				mainData: [],
 				total: 0,
 				page: 1,
 				listLoading: false,
@@ -277,7 +278,9 @@
 				},
 				value4: '',
 				pagishow: true,
-				currentPage: 1
+				currentPage: 1,
+				pageSize: 10,
+				role: ''
 
 			}
 		},
@@ -288,12 +291,17 @@
 			handleCurrentChange(val) {
 				console.log(`当前页: ${val}`);
 			},
-			//性别显示转换
-			formatSex: function (row, column) {
-				return row.sex == 1 ? '男' : row.sex == 0 ? '女' : '未知';
+			//时间转换
+			formatTime: function (row, column) {
+				return util.formatDate.format(new Date(row.time), 'yyyy-MM-dd hh:mm:ss')
 			},
-			formatDownload: function (row, column) {
-				return row.isDownload ? '是' : '否'
+			formatSource: function (row, column) {
+				console.log(this.role)
+				if(this.role == 0){
+					return row.realName
+				}else{
+					return row.nickName
+				}
 			},
 			handleCurrentChange(val) {
 				this.page = val;
@@ -306,13 +314,19 @@
 			getUsers() {
 				let para = {
 					page: this.page,
-					name: this.filters.name
+					name: this.filters.name,
+					currentPage: this.currentPage,
+					pageSize: this.pageSize
 				};
+				let params = new URLSearchParams()
+				for (var key in para) {
+					params.append(key, para[key])
+				}
 				this.listLoading = true;
 				//NProgress.start();
-				getUserListPage(para).then((res) => {
+				getMainDataPage(params).then((res) => {
 					this.total = res.data.total;
-					this.users = res.data.users;
+					this.mainData = res.data.mainData;
 					this.listLoading = false;
 					//NProgress.done();
 				});
@@ -430,6 +444,12 @@
 		},
 		mounted() {
 			this.getUsers();
+			var user = sessionStorage.getItem('user');
+			if(user){
+				console.log(user)
+				user = JSON.parse(user);
+				this.role = user.role
+			}
 		}
 	}
 

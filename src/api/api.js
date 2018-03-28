@@ -6,6 +6,8 @@ let base = '';
 
 export const msgSend = params => {return axios.post(`${base}/msgSend`, params).then(res => res.data); };
 
+export const getMainDataPage = params => { return axios.get(`${base}/data/listpage`, { params: params }); };
+
 export const requestLogin = params => { return axios.post(`${base}/login`, params).then(res => res.data); };
 
 export const getUserList = params => { return axios.get(`${base}/user/list`, { params: params }); };
